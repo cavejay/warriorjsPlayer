@@ -1,18 +1,17 @@
-Level 6
+Level 8
 
-The wall behind you feels a bit further away in this room. And you hear more cries for help.
+You hear the mumbling of wizards. Beware of their deadly wands! Good thing you found a bow.
 
-Tip: You can walk backward by passing `'backward'` as an argument to `walk()`. Same goes for `feel()`, `rescue()` and `attack()`. Archers have a limited attack distance.
+Tip: Use `warrior.look()` to determine your surroundings, and `warrior.shoot()` to fire an arrow.
 
 
-╔════════╗
-║C @ S aa║
-╚════════╝
+╔══════╗
+║@ Cww>║
+╚══════╝
 
   > = stairs
   @ = wordman
-  S = thickSludge
-  a = archer
+  w = wizard
 
 
 Warrior abilities:
@@ -28,6 +27,12 @@ Warrior abilities:
   warrior.rest()
 
   warrior.rescue()
+
+  warrior.pivot()
+
+  warrior.look() (NEW!)
+
+  warrior.shoot() (NEW!)
 
 
 When you're done editing Player.js, run the warriorjs command again.

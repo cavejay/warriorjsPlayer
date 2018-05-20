@@ -4,11 +4,12 @@ class Player {
     this._health = 20;
 
     // last chosen direction
-    this._direction = "backward";
+    this._direction = "forward";
 
     // last action
     this._action;
 
+    this.state = ""; // what we are currently attempting to do
     this.action; // current action in string form
     this.chosenAction; // current action in clojure form
   }
@@ -22,14 +23,15 @@ class Player {
 
     // if our current direction is a wall, plz switch
     if (warrior.feel(this._direction).isWall()) {
-      this._direction = "forward";
+      this.chosenAction = this.setAction("pivot");
+      // this._direction = "forward";
     }
 
     // Action Preference order
     this.chosenAction =
       this.chosenAction || // keep the default
       this.actionHealIfSafe() || // check for heals
-      this.interaction() || // check for enemy/captive
+      this.actionUnitInteraction() || // check for enemy/captive
       this.setAction("walk", this._direction); // walk in our current dir
 
     // Do the outcome of the above
@@ -42,8 +44,8 @@ class Player {
 
   setAction(action, direction) {
     this.action = action;
-    if (action == "rest") {
-      return this.warrior.rest;
+    if (["rest", "pivot"].includes(action)) {
+      return this.warrior[action];
     }
     return () => this.warrior[action](direction);
   }
@@ -53,8 +55,8 @@ class Player {
   }
 
   // Actioning feels
-  interaction() {
-    // If there's nothing interact with then move on
+  actionUnitInteraction() {
+    // If there's nothing to interact with then move on
     if (this.warrior.feel(this._direction).isEmpty()) {
       return;
     }
@@ -74,16 +76,27 @@ class Player {
       return;
     }
 
-    // if we healed last time but still lost health
-    // this check could be extended to deal with low health enemies
+    // Need to deal with enemies if they're low health but close
+
+    // if we healed last time but still lost health we should start retreating
     if (this._action == "rest" && this.wasHurt()) {
+      // start retreating
+      this.state = "retreat";
       // move away from the direction we were going
       // this.warrior.think("I should probably back up and heal");
-      if (this._direction == "backward") {
-        return this.setAction("walk", "forward");
-      } else {
-        return this.setAction("walk", "backward");
-      }
+      // if (this._direction == "backward") {
+      // return this.setAction("walk", "forward");
+      // } else {
+      return this.setAction("walk", "backward");
+      // }
+    } else if (this.state == "retreat" && !this.wasHurt()) {
+      // if we're no longer losing health we don't need to retreat
+      this.state = "";
+      return this.setAction("rest");
+
+      // if it's not safe and we're still retreating
+    } else if (this.state == "retreat") {
+      return this.setAction("walk", "backward");
     }
 
     // If there's nothing infront of us that could attack

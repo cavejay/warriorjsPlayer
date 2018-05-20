@@ -5,6 +5,7 @@ class Player {
 
     // last chosen direction
     this._direction = "forward";
+    this._facing = "East";
 
     // last action
     this._action;
@@ -13,6 +14,7 @@ class Player {
     this.action; // current action in string form
     this.chosenAction; // current action in clojure form
     this.dirs = ["forward", "backward", "left", "right"];
+    this.compass = ["North", "South", "East", "West"];
   }
 
   playTurn(w) {
@@ -79,6 +81,8 @@ class Player {
       return this.setAction("attack", this._direction);
     }
   }
+
+  actionDistantInteraction() {}
 
   // Keeping us alive
   actionHealIfSafe() {

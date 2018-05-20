@@ -26,7 +26,6 @@ class Player {
     this.looks = this.dirs.map(dir => {
       return w.look(dir);
     });
-    w.think(this.looks[0].map(s => (s.isUnit() ? "u" : " ")));
 
     // if our current direction is a wall, plz switch
     if (w.feel(this._direction).isWall()) {
@@ -65,16 +64,13 @@ class Player {
   // Actioning feels
   actionUnitInteraction() {
     // If there's nothing to interact with then move on
-    if (this.warrior.feel(this._direction).isEmpty()) {
+    if (this.looks[this.looks.indexOf(this._direction)][0].isEmpty()) {
       return;
     }
 
     // if there is and it's a captive then rescue
     if (
-      this.warrior
-        .feel(this._direction)
-        .getUnit()
-        .isBound()
+      this.looks[this.looks.indexOf(this._direction)][0].getUnit().isBound()
     ) {
       return this.setAction("rescue", this._direction);
     } else {
@@ -82,7 +78,10 @@ class Player {
     }
   }
 
-  actionDistantInteraction() {}
+  actionDistantInteraction() {
+    if (this.looks[0][0]) {
+    }
+  }
 
   // Keeping us alive
   actionHealIfSafe() {

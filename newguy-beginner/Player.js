@@ -13,8 +13,58 @@ class Player {
     this.state = ""; // what we are currently attempting to do
     this.action; // current action in string form
     this.chosenAction; // current action in clojure form
-    this.dirs = ["forward", "backward", "left", "right"];
-    this.compass = ["North", "South", "East", "West"];
+    this.dirs = ["forward", "right", "backward", "left"];
+    this.compass = ["North", "East", "South", "West"];
+  }
+
+  unwrapSpace(space) {
+    if (space.isUnit()) {
+      return space.getUnit();
+    } else if (space.isEmpty()) {
+      return "";
+    } else {
+      return {
+        other: true,
+        space: space
+      };
+    }
+  }
+
+  symboliseUnit(unit) {
+    if (!unit.other) {
+      if (unit === "") {
+        return "_";
+      } else if (unit.isBound()) {
+        return "c";
+      } else if (unit.isEnemy()) {
+        return "e";
+      }
+    }
+
+    if (unit.space.isWall()) {
+      return "#";
+    }
+  }
+
+  printLooks(w) {
+    w.think("Internal Map:");
+    w.think("     N");
+    w.think(`     ${this.looks[(4 - this.compass.indexOf(this._facing)) % 4][2]}`);
+    w.think(`     ${this.looks[(4 - this.compass.indexOf(this._facing)) % 4][1]}`);
+    w.think(`     ${this.looks[(4 - this.compass.indexOf(this._facing)) % 4][0]}`);
+    w.think(
+      `W ${this.looks[(7 - this.compass.indexOf(this._facing)) % 4][2]}${
+        this.looks[(7 - this.compass.indexOf(this._facing)) % 4][1]
+      }${this.looks[(7 - this.compass.indexOf(this._facing)) % 4][0]}@${
+        this.looks[(5 - this.compass.indexOf(this._facing)) % 4][0]
+      }${this.looks[(5 - this.compass.indexOf(this._facing)) % 4][1]}${
+        this.looks[(5 - this.compass.indexOf(this._facing)) % 4][2]
+      } E`
+    );
+    w.think(`     ${this.looks[(6 - this.compass.indexOf(this._facing)) % 4][0]}`);
+    w.think(`     ${this.looks[(6 - this.compass.indexOf(this._facing)) % 4][1]}`);
+    w.think(`     ${this.looks[(6 - this.compass.indexOf(this._facing)) % 4][2]}`);
+    w.think("     S");
   }
 
   playTurn(w) {
@@ -23,10 +73,13 @@ class Player {
     this.chosenAction = undefined;
 
     // data gathering
-    this.looks = this.dirs.map(dir => {
+    this._looks = this.dirs.map(dir => {
       return w.look(dir);
     });
-    w.think(this.looks[0].map(s => (s.isUnit() ? "u" : " ")));
+
+    // Data presentation
+    this.looks = this._looks.map(a => a.map(b => this.symboliseUnit(this.unwrapSpace(b))));
+    this.printLooks(w);
 
     // if our current direction is a wall, plz switch
     if (w.feel(this._direction).isWall()) {
@@ -52,8 +105,12 @@ class Player {
 
   setAction(action, direction) {
     this.action = action;
-    if (["rest", "pivot"].includes(action)) {
+    if (["rest"].includes(action)) {
       return this.warrior[action];
+    } else if (action === "pivot") {
+      // This probably broken
+      this.warrior.think("Pivoting is hard. I might lose my sense of direction");
+      this._facing = this.compass[(4 + this.dirs.indexOf(this._direction) - this.compass.indexOf(this._facing)) % 4];
     }
     return () => this.warrior[action](direction);
   }
@@ -82,7 +139,12 @@ class Player {
     }
   }
 
-  actionDistantInteraction() {}
+  actionDistantInteraction() {
+    // if there's a target we want to destroy 1 block away then shoot at it
+    // get an array of the spaces 1 space away
+    // if there's a target we want to destroy 2 blocks away then shoot at it
+    // prioritise targets by %health
+  }
 
   // Keeping us alive
   actionHealIfSafe() {

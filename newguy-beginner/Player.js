@@ -122,12 +122,12 @@ class Player {
   // Actioning feels
   actionUnitInteraction() {
     // If there's nothing to interact with then move on
-    if (this.looks[this.looks.indexOf(this._direction)][0].isEmpty()) {
+    if (this._looks[this.dirs.indexOf(this._direction)][0].isEmpty()) {
+      this.warrior.think("There's nothing in front of me.");
       return;
     }
-
     // if there is and it's a captive then rescue
-    if (this.looks[this.looks.indexOf(this._direction)][0].getUnit().isBound()) {
+    if (this._looks[this.dirs.indexOf(this._direction)][0].getUnit().isBound()) {
       return this.setAction("rescue", this._direction);
     } else {
       return this.setAction("attack", this._direction);
@@ -135,28 +135,75 @@ class Player {
   }
 
   actionDistantInteraction() {
+    this.warrior.think("Checking to see if there are enemies around");
+
+    // Check close enemies first
+
     // if there's a target we want to destroy 1 block away then shoot at it
-    // get an array of the spaces 1 space away
-    // if there's a target we want to destroy 2 blocks away then shoot at it
-    // prioritise targets by %health
+    let candidates = [];
+    let protectedDir = [];
+    let onespace = this.looks.map(a => a[1]);
+    onespace.forEach((s, i) => {
+      if (s == "e") {
+        // If there's an enemy then lets add it to candidate list
+        candidates.push(this.dirs[i]);
+      } else if (s == "c") {
+        protectedDir.push(this.dirs[i]);
+      }
+    });
+
+    // make sure no candidates are in a protected Direction
+    candidates = candidates.filter(c => !protectedDir.includes(c));
+
+    // if there's still something inside candidates
+    if (candidates.length > 0) {
+      // This is where we could put more logic to decide who to shoot.
+      // pick the first candidate
+      return this.setAction("shoot", candidates[0]);
+    }
+
+    // Check far enemies next
+
+    // if we're here we haven't found any candidates yet
+    let twospace = this.looks.map(a => a[2]);
+    twospace.forEach((s, i) => {
+      if (s == "e") {
+        // If there's an enemy then lets add it to candidate list
+        candidates.push(this.dirs[i]);
+      }
+    });
+
+    // once again make sure no candidates are in a protected Direction
+    candidates = candidates.filter(c => !protectedDir.includes(c));
+    if (candidates.length > 0) {
+      // This is where we could put more logic to decide who to shoot.
+      // pick the first candidate
+      return this.setAction("shoot", candidates[0]);
+    }
+
+    // if there were no valid targets lets do something else:
+    return;
+
+    // todo? prioritise targets by %health
   }
 
   // Keeping us alive
   actionHealIfSafe() {
     // If we're not hurt pass by
     if (this.warrior.health() >= 20) {
+      this.warrior.think("I don't need healing.");
       return;
     }
-
     // Need to deal with enemies if they're low health but close
 
     // if we healed last time but still lost health we should start retreating
     if (this._action == "rest" && this.wasHurt()) {
+      this.warrior.think("I should probably back up and heal");
+
       // start retreating
       this.state = "retreat";
 
       // move away from the direction we were going
-      this.warrior.think("I should probably back up and heal");
       if (this._direction == "backward") {
         return this.setAction("walk", "forward");
       } else {
@@ -166,13 +213,17 @@ class Player {
         return this.setAction("walk", "backward");
         // }
       }
-    } else if (this.state == "retreat" && !this.wasHurt()) {
+
       // if we're no longer losing health we don't need to retreat
+    } else if (this.state == "retreat" && !this.wasHurt()) {
+      this.warrior.think("This looks like a safe place to stop");
+
       this.state = "";
       return this.setAction("rest");
 
       // if it's not safe and we're still retreating
     } else if (this.state == "retreat") {
+      this.warrior.think("Still retreating");
       return this.setAction("walk", "backward");
     }
 
@@ -180,8 +231,11 @@ class Player {
     // &
     // If we've not taken damage from last time
     if (this.warrior.feel(this._direction).isEmpty() && !this.wasHurt()) {
+      this.warrior.think("I'm hurt and there's not much around. Lets rest up");
       // rest up
       return this.setAction("rest");
     }
+
+    this.warrior.think("I'm hurt but am gunna boss it out. plz halp");
   }
 }

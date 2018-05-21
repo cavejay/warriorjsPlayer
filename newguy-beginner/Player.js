@@ -122,17 +122,12 @@ class Player {
   // Actioning feels
   actionUnitInteraction() {
     // If there's nothing to interact with then move on
-    if (this.warrior.feel(this._direction).isEmpty()) {
+    if (this.looks[this.looks.indexOf(this._direction)][0].isEmpty()) {
       return;
     }
 
     // if there is and it's a captive then rescue
-    if (
-      this.warrior
-        .feel(this._direction)
-        .getUnit()
-        .isBound()
-    ) {
+    if (this.looks[this.looks.indexOf(this._direction)][0].getUnit().isBound()) {
       return this.setAction("rescue", this._direction);
     } else {
       return this.setAction("attack", this._direction);

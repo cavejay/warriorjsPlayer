@@ -105,13 +105,22 @@ class Player {
 
   setAction(action, direction) {
     this.action = action;
+
+    // if the action is to 'rest' we don't need a direction
     if (["rest"].includes(action)) {
       return this.warrior[action];
+
+      // if the action is to pivot plz work.
     } else if (action === "pivot") {
       // This probably broken
       this.warrior.think("Pivoting is hard. I might lose my sense of direction");
       this._facing = this.compass[(4 + this.dirs.indexOf(this._direction) - this.compass.indexOf(this._facing)) % 4];
+
+      // if we haven't got a direction then we should return nothing.
+    } else if (direction == "undefined") {
+      return;
     }
+
     return () => this.warrior[action](direction);
   }
 
@@ -134,57 +143,68 @@ class Player {
     }
   }
 
-  actionDistantInteraction() {
+  actionDistantInteraction(priority = "far") {
     this.warrior.think("Checking to see if there are enemies around");
+    this.warrior.think("I'm going to try to prioritise ranged enemies that are: " + priority);
 
-    // Check close enemies first
-
-    // if there's a target we want to destroy 1 block away then shoot at it
-    let candidates = [];
+    // Some arrays that we need
+    let closeCandidates = [];
+    let farCandidates = [];
     let protectedDir = [];
+    let dict = {};
+
+    // check closest non-adjacent space
     let onespace = this.looks.map(a => a[1]);
     onespace.forEach((s, i) => {
       if (s == "e") {
         // If there's an enemy then lets add it to candidate list
-        candidates.push(this.dirs[i]);
+        closeCandidates.push(this.dirs[i]);
       } else if (s == "c") {
         protectedDir.push(this.dirs[i]);
       }
     });
 
-    // make sure no candidates are in a protected Direction
-    candidates = candidates.filter(c => !protectedDir.includes(c));
-
-    // if there's still something inside candidates
-    if (candidates.length > 0) {
-      // This is where we could put more logic to decide who to shoot.
-      // pick the first candidate
-      return this.setAction("shoot", candidates[0]);
-    }
-
-    // Check far enemies next
-
-    // if we're here we haven't found any candidates yet
+    // check furthest non-adjacent space
     let twospace = this.looks.map(a => a[2]);
     twospace.forEach((s, i) => {
       if (s == "e") {
         // If there's an enemy then lets add it to candidate list
-        candidates.push(this.dirs[i]);
+        farCandidates.push(this.dirs[i]);
       }
     });
 
-    // once again make sure no candidates are in a protected Direction
-    candidates = candidates.filter(c => !protectedDir.includes(c));
-    if (candidates.length > 0) {
-      // This is where we could put more logic to decide who to shoot.
-      // pick the first candidate
-      return this.setAction("shoot", candidates[0]);
+    // if there's still something inside candidates
+    if (closeCandidates.length > 0) {
+      // pick statically. Lets choose the first one in the array
+      dict.close = this.setAction("shoot", closeCandidates[0]);
     }
 
-    // if there were no valid targets lets do something else:
-    return;
+    // filter the far candidates based on what we've seen closer.
+    farCandidates = farCandidates.filter(c => !protectedDir.includes(c));
+    if (farCandidates.length > 0) {
+      // pick statically. Lets choose the first one in the array
+      dict.far = this.setAction("shoot", farCandidates[0]);
+    }
 
-    // todo? prioritise targets by %health
+    // If far's the priority check if it's valid and return it's result if it is
+    if (priority === "far" && dict.far != undefined) {
+      return dict.far;
+
+      // catch when far is undefined (which would prioritise close)
+    } else if (priority === "far") {
+      return dict.close;
+
+      // If close is the priority and valid then return it
+    } else if (priority === "close" && dict.close != undefined) {
+      return dict.close;
+
+      // if not though, return far
+    } else if (priority === "close") {
+      return dict.far;
+    }
+
+    this.warrior.think("Can't see anyone");
+    return;
   }
 
   // Keeping us alive
